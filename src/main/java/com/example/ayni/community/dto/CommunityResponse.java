@@ -1,0 +1,1 @@
+package com.example.ayni.community.dto; import com.example.ayni.community.model.Community; import java.util.UUID; public record CommunityResponse(UUID id,String name,String description,String locationName,UUID createdBy){public static CommunityResponse from(Community c){return new CommunityResponse(c.getId(),c.getName(),c.getDescription(),c.getLocationName(),c.getCreatedBy());}}

@@ -1,0 +1,1 @@
+package com.example.ayni.community.dto; import jakarta.validation.constraints.*; public final class CommunityRequests{private CommunityRequests(){}public record Create(@NotBlank @Size(max=120)String name,@Size(max=1000)String description,@Size(max=255)String locationName,Double latitude,Double longitude){}public record Membership(@NotNull Boolean approved){}}
