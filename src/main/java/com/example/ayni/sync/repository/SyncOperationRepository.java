@@ -1,1 +1,12 @@
-package com.example.ayni.sync.repository;import com.example.ayni.sync.model.SyncOperation;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;public interface SyncOperationRepository extends JpaRepository<SyncOperation,UUID>{Optional<SyncOperation> findByOperationId(UUID operationId);List<SyncOperation> findByUserId(UUID userId);}
+package com.example.ayni.sync.repository;
+
+import com.example.ayni.sync.model.SyncOperation;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.*;
+
+public interface SyncOperationRepository extends JpaRepository<SyncOperation, UUID> {
+    Optional<SyncOperation> findByOperationId(UUID operationId);
+
+    List<SyncOperation> findByUserId(UUID userId);
+}
