@@ -41,6 +41,10 @@ public class CommunityMember {
         return userId;
     }
 
+    public UUID getCommunityId() {
+        return communityId;
+    }
+
     public Role getRole() {
         return role;
     }
@@ -49,8 +53,16 @@ public class CommunityMember {
         return status;
     }
 
+    public Instant getJoinedAt() {
+        return joinedAt;
+    }
+
     public void approve() {
         status = Status.ACTIVE;
+    }
+
+    public void reject() {
+        status = Status.REJECTED;
     }
 
     public enum Role {ADMIN, MEMBER}

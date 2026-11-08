@@ -2,10 +2,13 @@ package com.example.ayni.community.dto;
 
 import com.example.ayni.community.model.Community;
 
+import java.time.Instant;
 import java.util.UUID;
 
-public record CommunityResponse(UUID id, String name, String description, String locationName, UUID createdBy) {
+public record CommunityResponse(UUID id, String name, String description, String locationName, UUID createdBy,
+                                String visibility, String coverUrl, Instant createdAt) {
     public static CommunityResponse from(Community c) {
-        return new CommunityResponse(c.getId(), c.getName(), c.getDescription(), c.getLocationName(), c.getCreatedBy());
+        return new CommunityResponse(c.getId(), c.getName(), c.getDescription(), c.getLocationName(), c.getCreatedBy(),
+                c.getVisibility().name(), c.getCoverUrl(), c.getCreatedAt());
     }
 }

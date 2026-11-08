@@ -1,6 +1,7 @@
 package com.example.ayni.community.controller;
 
 import com.example.ayni.community.dto.*;
+import com.example.ayni.community.model.Community;
 import com.example.ayni.community.model.CommunityMember;
 import com.example.ayni.community.service.CommunityService;
 import jakarta.validation.Valid;
@@ -30,8 +31,13 @@ public class CommunityController {
     }
 
     @GetMapping
-    public List<CommunityResponse> list() {
-        return service.list();
+    public List<CommunityResponse> list(@RequestParam(required = false) Community.Visibility visibility) {
+        return service.list(visibility);
+    }
+
+    @GetMapping("/mine")
+    public List<CommunityResponse> mine(@AuthenticationPrincipal Jwt jwt) {
+        return service.mine(me(jwt));
     }
 
     @GetMapping("/{id}")
@@ -41,18 +47,25 @@ public class CommunityController {
 
     @PostMapping("/{id}/join")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public void join(@PathVariable UUID id, @AuthenticationPrincipal Jwt jwt) {
-        service.join(id, me(jwt));
+    public CommunityMemberResponse join(@PathVariable UUID id, @AuthenticationPrincipal Jwt jwt) {
+        return service.join(id, me(jwt));
     }
 
     @GetMapping("/{id}/members")
-    public List<CommunityMember> members(@PathVariable UUID id) {
-        return service.members(id);
+    public List<CommunityMemberResponse> members(@PathVariable UUID id,
+                                                 @RequestParam(required = false) CommunityMember.Status status) {
+        return service.members(id, status);
     }
 
     @PutMapping("/{id}/members/{userId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void decide(@PathVariable UUID id, @PathVariable UUID userId, @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody CommunityRequests.Membership r) {
         service.decide(id, userId, me(jwt), r);
+    }
+
+    @DeleteMapping("/{id}/members/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void leave(@PathVariable UUID id, @AuthenticationPrincipal Jwt jwt) {
+        service.leave(id, me(jwt));
     }
 }

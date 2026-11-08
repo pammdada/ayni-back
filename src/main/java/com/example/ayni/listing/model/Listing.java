@@ -104,6 +104,14 @@ public class Listing {
         return status;
     }
 
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
     public void update(Type type, String title, String description, BigDecimal price, String currency, String imageUrl, Status status) {
         this.type = type;
         this.title = title;

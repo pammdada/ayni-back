@@ -19,13 +19,24 @@ public class Community {
     private Double longitude;
     @Column(name = "created_by", nullable = false)
     private UUID createdBy;
+    @Enumerated(EnumType.STRING)
+    private Visibility visibility;
+    @Column(name = "cover_url")
+    private String coverUrl;
     @Column(name = "created_at")
     private Instant createdAt;
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 
     protected Community() {
     }
 
     public Community(String name, String description, String locationName, Double latitude, Double longitude, UUID createdBy) {
+        this(name, description, locationName, latitude, longitude, createdBy, Visibility.PUBLIC, null);
+    }
+
+    public Community(String name, String description, String locationName, Double latitude, Double longitude,
+                     UUID createdBy, Visibility visibility, String coverUrl) {
         id = UUID.randomUUID();
         this.name = name;
         this.description = description;
@@ -33,11 +44,20 @@ public class Community {
         this.latitude = latitude;
         this.longitude = longitude;
         this.createdBy = createdBy;
+        this.visibility = visibility;
+        this.coverUrl = coverUrl;
     }
 
     @PrePersist
     void created() {
-        createdAt = Instant.now();
+        Instant now = Instant.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    void updated() {
+        updatedAt = Instant.now();
     }
 
     public UUID getId() {
@@ -59,4 +79,22 @@ public class Community {
     public UUID getCreatedBy() {
         return createdBy;
     }
+
+    public Visibility getVisibility() {
+        return visibility;
+    }
+
+    public String getCoverUrl() {
+        return coverUrl;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public Instant getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public enum Visibility {PUBLIC, PRIVATE}
 }

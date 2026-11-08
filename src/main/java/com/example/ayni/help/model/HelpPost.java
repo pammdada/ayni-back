@@ -22,6 +22,8 @@ public class HelpPost {
     private Status status;
     @Column(name = "is_emergency")
     private boolean emergency;
+    @Column(name = "created_at")
+    private Instant createdAt;
 
     protected HelpPost() {
     }
@@ -35,6 +37,11 @@ public class HelpPost {
         this.description = description;
         this.emergency = emergency;
         status = Status.OPEN;
+    }
+
+    @PrePersist
+    void created() {
+        createdAt = Instant.now();
     }
 
     public UUID getId() {
@@ -63,6 +70,10 @@ public class HelpPost {
 
     public boolean isEmergency() {
         return emergency;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
     }
 
     public void setStatus(Status s) {

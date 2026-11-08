@@ -38,4 +38,16 @@ public final class SyncRequests {
             UUID entityId
     ) {
     }
+
+    public record LikePost(@NotNull UUID postId) {
+    }
+
+    public record CommentPost(@NotNull UUID postId, @NotBlank String content, UUID parentId) {
+    }
+
+    public record FollowProfile(@NotNull UUID followedId) {
+    }
+
+    public record JoinCommunity(@NotNull UUID communityId) {
+    }
 }
