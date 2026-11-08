@@ -10,11 +10,13 @@ public final class ProfileRequests {
     }
 
     public record Create(@NotNull AccountType accountType, @NotBlank @Size(max = 120) String fullName,
-                         @NotBlank @Size(max = 50) String username, @Email String email) {
+                         @NotBlank @Size(max = 50) String username, @NotBlank @Email String email,
+                         @Size(max = 120) String sector) {
     }
 
     public record Update(@NotBlank @Size(max = 120) String fullName, @Size(max = 30) String phone,
-                         @Size(max = 500) String bio, @Size(max = 2048) String avatarUrl) {
+                         @Size(max = 120) String sector, @Size(max = 500) String bio,
+                         @Size(max = 2048) String avatarUrl) {
     }
 
     public record Tags(@NotNull Set<String> tags) {

@@ -8,10 +8,7 @@ import com.example.ayni.help.repository.HelpPostRepository;
 import com.example.ayni.listing.model.Listing;
 import com.example.ayni.listing.repository.ListingRepository;
 import com.example.ayni.post.model.Post;
-import com.example.ayni.post.model.PostComment;
 import com.example.ayni.post.model.PostMedia;
-import com.example.ayni.post.repository.PostCommentRepository;
-import com.example.ayni.post.repository.PostLikeRepository;
 import com.example.ayni.post.repository.PostMediaRepository;
 import com.example.ayni.post.repository.PostRepository;
 import com.example.ayni.profile.dto.ProfileSummary;
@@ -29,19 +26,14 @@ public class FeedService {
     private static final int MAX_LIMIT = 50;
     private final PostRepository posts;
     private final PostMediaRepository media;
-    private final PostLikeRepository likes;
-    private final PostCommentRepository comments;
     private final ListingRepository listings;
     private final HelpPostRepository helps;
     private final ProfileRepository profiles;
 
-    public FeedService(PostRepository posts, PostMediaRepository media, PostLikeRepository likes,
-                       PostCommentRepository comments, ListingRepository listings, HelpPostRepository helps,
-                       ProfileRepository profiles) {
+    public FeedService(PostRepository posts, PostMediaRepository media, ListingRepository listings,
+                       HelpPostRepository helps, ProfileRepository profiles) {
         this.posts = posts;
         this.media = media;
-        this.likes = likes;
-        this.comments = comments;
         this.listings = listings;
         this.helps = helps;
         this.profiles = profiles;
@@ -70,11 +62,15 @@ public class FeedService {
         }
 
         List<UUID> postIds = postList.stream().map(Post::getId).toList();
-        Map<UUID, Long> likeCounts = postIds.isEmpty() ? Map.of() : countMap(likes.countByPostIds(postIds));
-        Map<UUID, Long> commentCounts = postIds.isEmpty() ? Map.of()
-                : countMap(comments.countByPostIds(postIds, PostComment.Status.ACTIVE));
-        Set<UUID> likedPostIds = postIds.isEmpty() ? Set.of()
-                : new HashSet<>(likes.findLikedPostIds(user, postIds));
+        Map<UUID, PostInteraction> interactions = new HashMap<>();
+        if (!postIds.isEmpty()) {
+            for (Object[] row : posts.interactionStats(postIds, user)) {
+                interactions.put(UUID.fromString((String) row[0]), new PostInteraction(
+                        ((Number) row[1]).longValue(),
+                        ((Number) row[2]).longValue(),
+                        ((Number) row[3]).longValue() > 0));
+            }
+        }
         Map<UUID, String> images = new HashMap<>();
         if (!postIds.isEmpty()) {
             for (PostMedia item : media.findByPostIdInOrderByPositionAsc(postIds)) {
@@ -84,10 +80,10 @@ public class FeedService {
 
         List<FeedItem> items = new ArrayList<>();
         for (Post post : postList) {
+            PostInteraction interaction = interactions.getOrDefault(post.getId(), PostInteraction.EMPTY);
             items.add(new FeedItem(post.getId(), "POST", authors.get(post.getAuthorId()), post.getCommunityId(),
                     post.getTitle(), summary(post.getContent()), images.get(post.getId()), post.getCreatedAt(),
-                    likeCounts.getOrDefault(post.getId(), 0L), commentCounts.getOrDefault(post.getId(), 0L),
-                    likedPostIds.contains(post.getId())));
+                    interaction.likeCount(), interaction.commentCount(), interaction.likedByMe()));
         }
         for (Listing listing : listingList) {
             items.add(new FeedItem(listing.getId(), "LISTING", authors.get(listing.getOwnerId()),
@@ -103,12 +99,8 @@ public class FeedService {
         return items.size() > size ? items.subList(0, size) : items;
     }
 
-    private Map<UUID, Long> countMap(List<Object[]> rows) {
-        Map<UUID, Long> counts = new HashMap<>();
-        for (Object[] row : rows) {
-            counts.put((UUID) row[0], ((Number) row[1]).longValue());
-        }
-        return counts;
+    private record PostInteraction(long likeCount, long commentCount, boolean likedByMe) {
+        private static final PostInteraction EMPTY = new PostInteraction(0, 0, false);
     }
 
     private String summary(String text) {

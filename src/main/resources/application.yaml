@@ -1,14 +1,34 @@
 spring:
   application:
     name: ayni
+  config:
+    # Permite ejecutar en local con el archivo .env de la raíz del backend.
+    # En producción las variables se definen en el entorno.
+    import: "optional:file:.env[.properties]"
   datasource:
-    url:
-    username:
-    password:
+    url: ${SUPABASE_DB_URL}
+    username: ${SUPABASE_DB_USER}
+    password: ${SUPABASE_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DB_POOL_MAX_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN_IDLE:2}
+      connection-timeout: 30000
+      idle-timeout: 300000
+      keepalive-time: 60000
+      max-lifetime: 1800000
   jpa:
     hibernate:
       ddl-auto: validate
     open-in-view: false
+    properties:
+      hibernate:
+        default_batch_fetch_size: 30
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        query:
+          in_clause_parameter_padding: true
   flyway:
     enabled: true
     locations: classpath:db/migration

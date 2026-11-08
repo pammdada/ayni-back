@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,6 +19,21 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
     List<Post> findByCommunityIdAndStatusNotOrderByCreatedAtDesc(UUID communityId, Post.Status status);
 
     long countByAuthorIdAndStatusNot(UUID authorId, Post.Status status);
+
+    /**
+     * Likes, comentarios y "me gusta" del usuario en una sola consulta para
+     * todo el listado. Antes eran 3 consultas separadas por cada página.
+     */
+    @Query(value = """
+            select cast(p.id as varchar),
+                   (select count(*) from post_likes l where l.post_id = p.id),
+                   (select count(*) from post_comments c where c.post_id = p.id and c.status = 'ACTIVE'),
+                   (select count(*) from post_likes l where l.post_id = p.id and l.user_id = :viewer)
+            from posts p
+            where p.id in (:postIds)
+            """, nativeQuery = true)
+    List<Object[]> interactionStats(@Param("postIds") Collection<UUID> postIds,
+                                    @Param("viewer") UUID viewer);
 
     @Query("""
             select p from Post p

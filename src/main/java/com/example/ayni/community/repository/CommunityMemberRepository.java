@@ -27,4 +27,11 @@ public interface CommunityMemberRepository extends JpaRepository<CommunityMember
             """)
     List<Object[]> countByCommunityIds(@Param("communityIds") Collection<UUID> communityIds,
                                        @Param("status") CommunityMember.Status status);
+
+    @Query("""
+            select m.communityId from CommunityMember m
+            where m.userId = :userId and m.status = :status
+            """)
+    List<UUID> findCommunityIdsByUserIdAndStatus(@Param("userId") UUID userId,
+                                                 @Param("status") CommunityMember.Status status);
 }

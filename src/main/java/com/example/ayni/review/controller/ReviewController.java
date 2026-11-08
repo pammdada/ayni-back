@@ -1,5 +1,6 @@
 package com.example.ayni.review.controller;
 
+import com.example.ayni.review.dto.ReviewOverview;
 import com.example.ayni.review.dto.ReviewRequests;
 import com.example.ayni.review.dto.ReviewResponse;
 import com.example.ayni.review.dto.ReviewSummary;
@@ -30,6 +31,11 @@ public class ReviewController {
     @GetMapping("/summary")
     public ReviewSummary summary(@PathVariable UUID profileId, @AuthenticationPrincipal Jwt jwt) {
         return service.summary(profileId, viewer(jwt));
+    }
+
+    @GetMapping("/overview")
+    public ReviewOverview overview(@PathVariable UUID profileId, @AuthenticationPrincipal Jwt jwt) {
+        return service.overview(profileId, viewer(jwt));
     }
 
     @PutMapping("/me")

@@ -3,6 +3,7 @@ package com.example.ayni.review.service;
 import com.example.ayni.profile.dto.ProfileSummary;
 import com.example.ayni.profile.model.Profile;
 import com.example.ayni.profile.repository.ProfileRepository;
+import com.example.ayni.review.dto.ReviewOverview;
 import com.example.ayni.review.dto.ReviewRequests;
 import com.example.ayni.review.dto.ReviewResponse;
 import com.example.ayni.review.dto.ReviewSummary;
@@ -30,10 +31,19 @@ public class ReviewService {
     public List<ReviewResponse> list(UUID profileId) {
         requireProfile(profileId);
         List<ProfileReview> found = reviews.findByProfileIdOrderByCreatedAtDesc(profileId);
+        return toResponses(found, reviewerProfiles(found));
+    }
+
+    /**
+     * Devuelve resumen y listado en una sola consulta para evitar que el
+     * frontend haga dos peticiones y que las reseñas se carguen dos veces.
+     */
+    @Transactional(readOnly = true)
+    public ReviewOverview overview(UUID profileId, UUID viewerId) {
+        requireProfile(profileId);
+        List<ProfileReview> found = reviews.findByProfileIdOrderByCreatedAtDesc(profileId);
         Map<UUID, ProfileSummary> reviewers = reviewerProfiles(found);
-        return found.stream()
-                .map(review -> ReviewResponse.from(review, reviewers.get(review.getReviewerId())))
-                .toList();
+        return new ReviewOverview(summarize(found, viewerId, reviewers), toResponses(found, reviewers));
     }
 
     public ReviewResponse upsert(UUID profileId, UUID reviewerId, ReviewRequests.Upsert request) {
@@ -60,6 +70,11 @@ public class ReviewService {
     public ReviewSummary summary(UUID profileId, UUID viewerId) {
         requireProfile(profileId);
         List<ProfileReview> found = reviews.findByProfileIdOrderByCreatedAtDesc(profileId);
+        return summarize(found, viewerId, reviewerProfiles(found));
+    }
+
+    private ReviewSummary summarize(List<ProfileReview> found, UUID viewerId,
+                                    Map<UUID, ProfileSummary> reviewers) {
         double average = round(found.stream().mapToInt(ProfileReview::getStars).average().orElse(0));
         Map<String, List<ProfileReview>> grouped = found.stream()
                 .collect(Collectors.groupingBy(ProfileReview::getTask));
@@ -73,9 +88,15 @@ public class ReviewService {
         ReviewResponse myReview = viewerId == null ? null : found.stream()
                 .filter(review -> review.getReviewerId().equals(viewerId))
                 .findFirst()
-                .map(review -> ReviewResponse.from(review, profileSummary(viewerId)))
+                .map(review -> ReviewResponse.from(review, reviewers.get(viewerId)))
                 .orElse(null);
         return new ReviewSummary(average, found.size(), byTask, myReview);
+    }
+
+    private List<ReviewResponse> toResponses(List<ProfileReview> found, Map<UUID, ProfileSummary> reviewers) {
+        return found.stream()
+                .map(review -> ReviewResponse.from(review, reviewers.get(review.getReviewerId())))
+                .toList();
     }
 
     private Map<UUID, ProfileSummary> reviewerProfiles(List<ProfileReview> found) {

@@ -20,6 +20,7 @@ public class Profile {
     @Column(nullable = false)
     private String email;
     private String phone;
+    private String sector;
     private String bio;
     @Column(name = "avatar_url")
     private String avatarUrl;
@@ -27,7 +28,7 @@ public class Profile {
     private Instant createdAt;
     @Column(name = "updated_at")
     private Instant updatedAt;
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "user_profile_tags", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "tag_id"))
     private Set<ProfileTag> tags = new HashSet<>();
 
@@ -77,6 +78,10 @@ public class Profile {
         return phone;
     }
 
+    public String getSector() {
+        return sector;
+    }
+
     public String getBio() {
         return bio;
     }
@@ -89,11 +94,16 @@ public class Profile {
         return tags;
     }
 
-    public void update(String fullName, String phone, String bio, String avatarUrl) {
+    public void update(String fullName, String sector, String phone, String bio, String avatarUrl) {
         this.fullName = fullName;
+        this.sector = sector;
         this.phone = phone;
         this.bio = bio;
         this.avatarUrl = avatarUrl;
+    }
+
+    public void setSector(String sector) {
+        this.sector = sector;
     }
 
     public void setTags(Set<ProfileTag> tags) {

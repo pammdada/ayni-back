@@ -67,12 +67,12 @@ public class PostService {
 
         Post post = posts.save(new Post(user, request.communityId(), kind, request.title(), request.content(), visibility));
         replaceMedia(post.getId(), request.media());
-        return response(post, user);
+        return responses(List.of(post), user).get(0);
     }
 
     @Transactional(readOnly = true)
     public PostResponse get(UUID id, UUID viewer) {
-        return response(visible(id, viewer), viewer);
+        return responses(List.of(visible(id, viewer)), viewer).get(0);
     }
 
     public PostResponse update(UUID id, UUID user, PostRequests.Update request) {
@@ -89,7 +89,7 @@ public class PostService {
 
         post.update(kind, request.title(), request.content(), visibility);
         if (request.media() != null) replaceMedia(post.getId(), request.media());
-        return response(post, user);
+        return responses(List.of(post), user).get(0);
     }
 
     public void delete(UUID id, UUID user) {
@@ -98,11 +98,15 @@ public class PostService {
 
     @Transactional(readOnly = true)
     public List<PostResponse> byProfile(UUID profile, UUID viewer) {
-        return posts.findByAuthorIdAndStatusNotOrderByCreatedAtDesc(profile, Post.Status.DELETED)
-                .stream()
-                .filter(post -> canView(post, viewer))
-                .map(post -> response(post, viewer))
+        AccessContext context = accessContext(viewer);
+        List<Post> found = posts.findByAuthorIdAndStatusNotOrderByCreatedAtDesc(profile, Post.Status.DELETED);
+        // Precarga las comunidades de todas las publicaciones en una sola consulta
+        // para no consultar una comunidad por cada publicación.
+        Map<UUID, Community> communitiesById = loadCommunities(found);
+        List<Post> visiblePosts = found.stream()
+                .filter(post -> canView(post, viewer, context, communitiesById))
                 .toList();
+        return responses(visiblePosts, viewer);
     }
 
     @Transactional(readOnly = true)
@@ -111,11 +115,13 @@ public class PostService {
         if (community.getVisibility() == Community.Visibility.PRIVATE && !isActiveMember(communityId, viewer)) {
             throw new EntityNotFoundException("Comunidad no encontrada");
         }
-        return posts.findByCommunityIdAndStatusNotOrderByCreatedAtDesc(communityId, Post.Status.DELETED)
+        AccessContext context = accessContext(viewer);
+        Map<UUID, Community> communitiesById = Map.of(community.getId(), community);
+        List<Post> visiblePosts = posts.findByCommunityIdAndStatusNotOrderByCreatedAtDesc(communityId, Post.Status.DELETED)
                 .stream()
-                .filter(post -> canView(post, viewer))
-                .map(post -> response(post, viewer))
+                .filter(post -> canView(post, viewer, context, communitiesById))
                 .toList();
+        return responses(visiblePosts, viewer);
     }
 
     public long like(UUID id, UUID user) {
@@ -166,12 +172,40 @@ public class PostService {
         }
     }
 
-    private PostResponse response(Post post, UUID viewer) {
-        List<PostMedia> postMedia = media.findByPostIdOrderByPositionAsc(post.getId());
-        long likeCount = likes.countByPostId(post.getId());
-        long commentCount = comments.countByPostIdAndStatus(post.getId(), PostComment.Status.ACTIVE);
-        boolean likedByMe = likes.existsByPostIdAndUserId(post.getId(), viewer);
-        return PostResponse.from(post, postMedia, likeCount, commentCount, likedByMe);
+    /**
+     * Carga en lote los datos derivados de las publicaciones (media, likes y
+     * comentarios) para evitar 4 consultas por cada publicación.
+     */
+    private List<PostResponse> responses(List<Post> list, UUID viewer) {
+        if (list.isEmpty()) return List.of();
+        List<UUID> postIds = list.stream().map(Post::getId).toList();
+
+        Map<UUID, List<PostMedia>> mediaByPost = media.findByPostIdInOrderByPositionAsc(postIds).stream()
+                .collect(Collectors.groupingBy(PostMedia::getPostId));
+
+        Map<UUID, Interaction> interactions = new HashMap<>();
+        for (Object[] row : posts.interactionStats(postIds, viewer)) {
+            interactions.put(UUID.fromString((String) row[0]), new Interaction(
+                    ((Number) row[1]).longValue(),
+                    ((Number) row[2]).longValue(),
+                    ((Number) row[3]).longValue() > 0));
+        }
+
+        return list.stream()
+                .map(post -> {
+                    Interaction interaction = interactions.getOrDefault(post.getId(), Interaction.EMPTY);
+                    return PostResponse.from(
+                            post,
+                            mediaByPost.getOrDefault(post.getId(), List.of()),
+                            interaction.likeCount(),
+                            interaction.commentCount(),
+                            interaction.likedByMe());
+                })
+                .toList();
+    }
+
+    private record Interaction(long likeCount, long commentCount, boolean likedByMe) {
+        private static final Interaction EMPTY = new Interaction(0, 0, false);
     }
 
     private List<CommentResponse> commentResponses(List<PostComment> found) {
@@ -190,25 +224,54 @@ public class PostService {
 
     private Post visible(UUID id, UUID viewer) {
         Post post = post(id);
-        if (!canView(post, viewer)) throw new EntityNotFoundException("Publicación no encontrada");
+        if (!canView(post, viewer, accessContext(viewer), loadCommunities(List.of(post)))) {
+            throw new EntityNotFoundException("Publicación no encontrada");
+        }
         return post;
     }
 
-    private boolean canView(Post post, UUID viewer) {
+    private boolean canView(Post post, UUID viewer, AccessContext context,
+                            Map<UUID, Community> communitiesById) {
         if (post.getStatus() == Post.Status.DELETED) return false;
         if (post.getStatus() == Post.Status.HIDDEN && !post.getAuthorId().equals(viewer)) return false;
         if (post.getAuthorId().equals(viewer)) return true;
 
         if (post.getCommunityId() != null) {
-            Community community = community(post.getCommunityId());
-            if (community.getVisibility() == Community.Visibility.PRIVATE) return isActiveMember(post.getCommunityId(), viewer);
+            Community community = communitiesById.get(post.getCommunityId());
+            if (community != null && community.getVisibility() == Community.Visibility.PRIVATE) {
+                return context.communities().contains(post.getCommunityId());
+            }
         }
 
         return switch (post.getVisibility()) {
             case PUBLIC -> true;
-            case FOLLOWERS -> follows.existsByFollowerIdAndFollowedId(viewer, post.getAuthorId());
-            case COMMUNITY -> post.getCommunityId() != null && isActiveMember(post.getCommunityId(), viewer);
+            case FOLLOWERS -> context.followed().contains(post.getAuthorId());
+            case COMMUNITY -> post.getCommunityId() != null
+                    && context.communities().contains(post.getCommunityId());
         };
+    }
+
+    private Map<UUID, Community> loadCommunities(List<Post> list) {
+        Set<UUID> ids = list.stream()
+                .map(Post::getCommunityId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (ids.isEmpty()) return Map.of();
+        return communities.findAllById(ids).stream()
+                .collect(Collectors.toMap(Community::getId, community -> community));
+    }
+
+    private AccessContext accessContext(UUID viewer) {
+        if (viewer == null) {
+            return new AccessContext(Set.of(), Set.of());
+        }
+        return new AccessContext(
+                new HashSet<>(follows.findFollowedIds(viewer)),
+                new HashSet<>(members.findCommunityIdsByUserIdAndStatus(viewer, CommunityMember.Status.ACTIVE))
+        );
+    }
+
+    private record AccessContext(Set<UUID> followed, Set<UUID> communities) {
     }
 
     private Post owned(UUID id, UUID user) {

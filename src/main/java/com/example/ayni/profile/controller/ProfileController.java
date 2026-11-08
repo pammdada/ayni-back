@@ -29,6 +29,11 @@ public class ProfileController {
         return service.get(UUID.fromString(jwt.getSubject()));
     }
 
+    @GetMapping
+    public java.util.List<ProfileResponse> byIds(@RequestParam("ids") java.util.List<UUID> ids) {
+        return service.getMany(ids);
+    }
+
     @GetMapping("/{id}")
     public ProfileResponse get(@PathVariable UUID id) {
         return service.get(id);
