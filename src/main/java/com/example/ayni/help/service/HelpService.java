@@ -1,1 +1,54 @@
-package com.example.ayni.help.service;import com.example.ayni.help.dto.*;import com.example.ayni.help.model.*;import com.example.ayni.help.repository.*;import jakarta.persistence.EntityNotFoundException;import org.springframework.stereotype.Service;import org.springframework.transaction.annotation.Transactional;import java.util.*;@Service @Transactional public class HelpService{private final HelpPostRepository posts;private final HelpResponseRepository responses;public HelpService(HelpPostRepository posts,HelpResponseRepository responses){this.posts=posts;this.responses=responses;}public HelpPostResponse create(UUID user,HelpRequests.Create r){return HelpPostResponse.from(posts.save(new HelpPost(user,r.communityId(),r.type(),r.title(),r.description(),r.emergency())));}@Transactional(readOnly=true)public List<HelpPostResponse> list(){return posts.findByStatus(HelpPost.Status.OPEN).stream().map(HelpPostResponse::from).toList();}@Transactional(readOnly=true)public HelpPostResponse get(UUID id){return HelpPostResponse.from(post(id));}public void respond(UUID id,UUID user,HelpRequests.Response r){HelpPost p=post(id);if(p.getUserId().equals(user))throw new IllegalArgumentException("No puede responder a su propia publicación");responses.save(new HelpResponse(id,user,r.message()));}public HelpPostResponse status(UUID id,UUID user,HelpRequests.Status r){HelpPost p=post(id);if(!p.getUserId().equals(user))throw new IllegalArgumentException("No puede cambiar este estado");p.setStatus(r.status());return HelpPostResponse.from(p);}private HelpPost post(UUID id){return posts.findById(id).orElseThrow(()->new EntityNotFoundException("Solicitud no encontrada"));}}
+package com.example.ayni.help.service;
+
+import com.example.ayni.help.dto.*;
+import com.example.ayni.help.model.*;
+import com.example.ayni.help.repository.*;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+
+@Service
+@Transactional
+public class HelpService {
+    private final HelpPostRepository posts;
+    private final HelpResponseRepository responses;
+
+    public HelpService(HelpPostRepository posts, HelpResponseRepository responses) {
+        this.posts = posts;
+        this.responses = responses;
+    }
+
+    public HelpPostResponse create(UUID user, HelpRequests.Create r) {
+        return HelpPostResponse.from(posts.save(new HelpPost(user, r.communityId(), r.type(), r.title(), r.description(), r.emergency())));
+    }
+
+    @Transactional(readOnly = true)
+    public List<HelpPostResponse> list() {
+        return posts.findByStatus(HelpPost.Status.OPEN).stream().map(HelpPostResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public HelpPostResponse get(UUID id) {
+        return HelpPostResponse.from(post(id));
+    }
+
+    public void respond(UUID id, UUID user, HelpRequests.Response r) {
+        HelpPost p = post(id);
+        if (p.getUserId().equals(user))
+            throw new IllegalArgumentException("No puede responder a su propia publicación");
+        responses.save(new HelpResponse(id, user, r.message()));
+    }
+
+    public HelpPostResponse status(UUID id, UUID user, HelpRequests.Status r) {
+        HelpPost p = post(id);
+        if (!p.getUserId().equals(user)) throw new IllegalArgumentException("No puede cambiar este estado");
+        p.setStatus(r.status());
+        return HelpPostResponse.from(p);
+    }
+
+    private HelpPost post(UUID id) {
+        return posts.findById(id).orElseThrow(() -> new EntityNotFoundException("Solicitud no encontrada"));
+    }
+}

@@ -1,1 +1,24 @@
-package com.example.ayni.listing.dto;import com.example.ayni.listing.model.Listing;import jakarta.validation.constraints.*;import java.math.BigDecimal;import java.util.UUID;public final class ListingRequests{private ListingRequests(){}public record Create(UUID communityId,@NotNull UUID categoryId,@NotNull Listing.Type type,@NotBlank @Size(max=160)String title,@NotBlank @Size(max=2000)String description,@PositiveOrZero BigDecimal price,@Pattern(regexp="[A-Z]{3}")String currency,@Size(max=2048)String imageUrl){}public record Update(@NotNull Listing.Type type,@NotBlank @Size(max=160)String title,@NotBlank @Size(max=2000)String description,@PositiveOrZero BigDecimal price,@Pattern(regexp="[A-Z]{3}")String currency,@Size(max=2048)String imageUrl,@NotNull Listing.Status status){}}
+package com.example.ayni.listing.dto;
+
+import com.example.ayni.listing.model.Listing;
+import jakarta.validation.constraints.*;
+
+import java.math.BigDecimal;
+import java.util.UUID;
+
+public final class ListingRequests {
+    private ListingRequests() {
+    }
+
+    public record Create(UUID communityId, @NotNull UUID categoryId, @NotNull Listing.Type type,
+                         @NotBlank @Size(max = 160) String title, @NotBlank @Size(max = 2000) String description,
+                         @PositiveOrZero BigDecimal price, @Pattern(regexp = "[A-Z]{3}") String currency,
+                         @Size(max = 2048) String imageUrl) {
+    }
+
+    public record Update(@NotNull Listing.Type type, @NotBlank @Size(max = 160) String title,
+                         @NotBlank @Size(max = 2000) String description, @PositiveOrZero BigDecimal price,
+                         @Pattern(regexp = "[A-Z]{3}") String currency, @Size(max = 2048) String imageUrl,
+                         @NotNull Listing.Status status) {
+    }
+}

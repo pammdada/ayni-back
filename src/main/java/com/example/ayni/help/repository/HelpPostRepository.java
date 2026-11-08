@@ -1,1 +1,10 @@
-package com.example.ayni.help.repository;import com.example.ayni.help.model.HelpPost;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;public interface HelpPostRepository extends JpaRepository<HelpPost,UUID>{List<HelpPost> findByStatus(HelpPost.Status status);}
+package com.example.ayni.help.repository;
+
+import com.example.ayni.help.model.HelpPost;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.*;
+
+public interface HelpPostRepository extends JpaRepository<HelpPost, UUID> {
+    List<HelpPost> findByStatus(HelpPost.Status status);
+}

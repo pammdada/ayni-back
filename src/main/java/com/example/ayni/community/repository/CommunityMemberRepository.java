@@ -1,1 +1,12 @@
-package com.example.ayni.community.repository; import com.example.ayni.community.model.CommunityMember; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*; public interface CommunityMemberRepository extends JpaRepository<CommunityMember,UUID>{Optional<CommunityMember> findByCommunityIdAndUserId(UUID communityId,UUID userId);List<CommunityMember> findByCommunityId(UUID communityId);}
+package com.example.ayni.community.repository;
+
+import com.example.ayni.community.model.CommunityMember;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.*;
+
+public interface CommunityMemberRepository extends JpaRepository<CommunityMember, UUID> {
+    Optional<CommunityMember> findByCommunityIdAndUserId(UUID communityId, UUID userId);
+
+    List<CommunityMember> findByCommunityId(UUID communityId);
+}

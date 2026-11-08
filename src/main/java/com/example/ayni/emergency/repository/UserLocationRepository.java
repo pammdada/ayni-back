@@ -1,1 +1,9 @@
-package com.example.ayni.emergency.repository;import com.example.ayni.emergency.model.UserLocation;import org.springframework.data.jpa.repository.JpaRepository;import java.util.UUID;public interface UserLocationRepository extends JpaRepository<UserLocation,UUID>{}
+package com.example.ayni.emergency.repository;
+
+import com.example.ayni.emergency.model.UserLocation;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.UUID;
+
+public interface UserLocationRepository extends JpaRepository<UserLocation, UUID> {
+}

@@ -1,2 +1,66 @@
-package com.example.ayni.community.service; import com.example.ayni.community.dto.*; import com.example.ayni.community.model.*; import com.example.ayni.community.repository.*; import jakarta.persistence.EntityNotFoundException; import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional; import java.util.*;
-@Service @Transactional public class CommunityService {private final CommunityRepository communities;private final CommunityMemberRepository members;public CommunityService(CommunityRepository communities,CommunityMemberRepository members){this.communities=communities;this.members=members;}public CommunityResponse create(UUID user,CommunityRequests.Create request){Community c=communities.save(new Community(request.name(),request.description(),request.locationName(),request.latitude(),request.longitude(),user));members.save(new CommunityMember(c.getId(),user,CommunityMember.Role.ADMIN,CommunityMember.Status.ACTIVE));return CommunityResponse.from(c);}@Transactional(readOnly=true)public List<CommunityResponse> list(){return communities.findAll().stream().map(CommunityResponse::from).toList();}@Transactional(readOnly=true)public CommunityResponse get(UUID id){return CommunityResponse.from(community(id));}public void join(UUID id,UUID user){community(id);if(members.findByCommunityIdAndUserId(id,user).isPresent())throw new IllegalArgumentException("La solicitud ya existe");members.save(new CommunityMember(id,user,CommunityMember.Role.MEMBER,CommunityMember.Status.PENDING));}public void decide(UUID id,UUID requester,UUID admin,CommunityRequests.Membership decision){requireAdmin(id,admin);CommunityMember m=members.findByCommunityIdAndUserId(id,requester).orElseThrow(()->new EntityNotFoundException("Membresía no encontrada"));if(decision.approved())m.approve();}public List<CommunityMember> members(UUID id){community(id);return members.findByCommunityId(id);}private Community community(UUID id){return communities.findById(id).orElseThrow(()->new EntityNotFoundException("Comunidad no encontrada"));}private void requireAdmin(UUID id,UUID user){CommunityMember m=members.findByCommunityIdAndUserId(id,user).orElseThrow(()->new IllegalArgumentException("No pertenece a la comunidad"));if(m.getRole()!=CommunityMember.Role.ADMIN||m.getStatus()!=CommunityMember.Status.ACTIVE)throw new IllegalArgumentException("Se requiere ser administrador");}}
+package com.example.ayni.community.service;
+
+import com.example.ayni.community.dto.*;
+import com.example.ayni.community.model.*;
+import com.example.ayni.community.repository.*;
+import jakarta.persistence.EntityNotFoundException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
+
+@Service
+@Transactional
+public class CommunityService {
+    private final CommunityRepository communities;
+    private final CommunityMemberRepository members;
+
+    public CommunityService(CommunityRepository communities, CommunityMemberRepository members) {
+        this.communities = communities;
+        this.members = members;
+    }
+
+    public CommunityResponse create(UUID user, CommunityRequests.Create request) {
+        Community c = communities.save(new Community(request.name(), request.description(), request.locationName(), request.latitude(), request.longitude(), user));
+        members.save(new CommunityMember(c.getId(), user, CommunityMember.Role.ADMIN, CommunityMember.Status.ACTIVE));
+        return CommunityResponse.from(c);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CommunityResponse> list() {
+        return communities.findAll().stream().map(CommunityResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public CommunityResponse get(UUID id) {
+        return CommunityResponse.from(community(id));
+    }
+
+    public void join(UUID id, UUID user) {
+        community(id);
+        if (members.findByCommunityIdAndUserId(id, user).isPresent())
+            throw new IllegalArgumentException("La solicitud ya existe");
+        members.save(new CommunityMember(id, user, CommunityMember.Role.MEMBER, CommunityMember.Status.PENDING));
+    }
+
+    public void decide(UUID id, UUID requester, UUID admin, CommunityRequests.Membership decision) {
+        requireAdmin(id, admin);
+        CommunityMember m = members.findByCommunityIdAndUserId(id, requester).orElseThrow(() -> new EntityNotFoundException("Membresía no encontrada"));
+        if (decision.approved()) m.approve();
+    }
+
+    public List<CommunityMember> members(UUID id) {
+        community(id);
+        return members.findByCommunityId(id);
+    }
+
+    private Community community(UUID id) {
+        return communities.findById(id).orElseThrow(() -> new EntityNotFoundException("Comunidad no encontrada"));
+    }
+
+    private void requireAdmin(UUID id, UUID user) {
+        CommunityMember m = members.findByCommunityIdAndUserId(id, user).orElseThrow(() -> new IllegalArgumentException("No pertenece a la comunidad"));
+        if (m.getRole() != CommunityMember.Role.ADMIN || m.getStatus() != CommunityMember.Status.ACTIVE)
+            throw new IllegalArgumentException("Se requiere ser administrador");
+    }
+}

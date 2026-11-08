@@ -1,1 +1,9 @@
-package com.example.ayni.help.repository;import com.example.ayni.help.model.HelpResponse;import org.springframework.data.jpa.repository.JpaRepository;import java.util.UUID;public interface HelpResponseRepository extends JpaRepository<HelpResponse,UUID>{}
+package com.example.ayni.help.repository;
+
+import com.example.ayni.help.model.HelpResponse;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.UUID;
+
+public interface HelpResponseRepository extends JpaRepository<HelpResponse, UUID> {
+}

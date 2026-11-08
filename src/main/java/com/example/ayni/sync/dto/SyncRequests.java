@@ -11,12 +11,14 @@ import java.util.UUID;
 
 public final class SyncRequests {
 
-    private SyncRequests() {}
+    private SyncRequests() {
+    }
 
     public record Batch(
             @NotEmpty
             List<Operation> operations
-    ) {}
+    ) {
+    }
 
     public record Operation(
             @NotNull
@@ -27,11 +29,13 @@ public final class SyncRequests {
 
             @NotNull
             JsonNode data
-    ) {}
+    ) {
+    }
 
     public record Result(
             UUID operationId,
             String status,
             UUID entityId
-    ) {}
+    ) {
+    }
 }

@@ -1,1 +1,75 @@
-package com.example.ayni.help.model;import jakarta.persistence.*;import java.time.Instant;import java.util.UUID;@Entity @Table(name="help_posts")public class HelpPost{@Id private UUID id;@Column(name="user_id")private UUID userId;@Column(name="community_id")private UUID communityId;@Enumerated(EnumType.STRING)private Type type;private String title;private String description;@Enumerated(EnumType.STRING)private Status status;@Column(name="is_emergency")private boolean emergency;protected HelpPost(){}public HelpPost(UUID user,UUID community,Type type,String title,String description,boolean emergency){id=UUID.randomUUID();userId=user;communityId=community;this.type=type;this.title=title;this.description=description;this.emergency=emergency;status=Status.OPEN;}public UUID getId(){return id;}public UUID getUserId(){return userId;}public Type getType(){return type;}public String getTitle(){return title;}public String getDescription(){return description;}public Status getStatus(){return status;}public boolean isEmergency(){return emergency;}public void setStatus(Status s){status=s;}public enum Type{NEED,OFFER,EXCHANGE}public enum Status{OPEN,IN_PROGRESS,RESOLVED,CANCELLED}}
+package com.example.ayni.help.model;
+
+import jakarta.persistence.*;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Entity
+@Table(name = "help_posts")
+public class HelpPost {
+    @Id
+    private UUID id;
+    @Column(name = "user_id")
+    private UUID userId;
+    @Column(name = "community_id")
+    private UUID communityId;
+    @Enumerated(EnumType.STRING)
+    private Type type;
+    private String title;
+    private String description;
+    @Enumerated(EnumType.STRING)
+    private Status status;
+    @Column(name = "is_emergency")
+    private boolean emergency;
+
+    protected HelpPost() {
+    }
+
+    public HelpPost(UUID user, UUID community, Type type, String title, String description, boolean emergency) {
+        id = UUID.randomUUID();
+        userId = user;
+        communityId = community;
+        this.type = type;
+        this.title = title;
+        this.description = description;
+        this.emergency = emergency;
+        status = Status.OPEN;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public boolean isEmergency() {
+        return emergency;
+    }
+
+    public void setStatus(Status s) {
+        status = s;
+    }
+
+    public enum Type {NEED, OFFER, EXCHANGE}
+
+    public enum Status {OPEN, IN_PROGRESS, RESOLVED, CANCELLED}
+}

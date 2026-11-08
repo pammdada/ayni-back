@@ -1,1 +1,61 @@
-package com.example.ayni.sync.model;import jakarta.persistence.*;import java.time.Instant;import java.util.UUID;@Entity @Table(name="sync_operations")public class SyncOperation{@Id private UUID id;@Column(name="user_id")private UUID userId;@Column(name="operation_id")private UUID operationId;@Column(name="operation_type")private String operationType;@Column(name="entity_id")private UUID entityId;private String status;@Column(name="created_at")private Instant createdAt;@Column(name="synced_at")private Instant syncedAt;protected SyncOperation(){}public SyncOperation(UUID user,UUID operation,String type){id=UUID.randomUUID();userId=user;operationId=operation;operationType=type;status="PROCESSING";createdAt=Instant.now();}public UUID getOperationId(){return operationId;}public UUID getEntityId(){return entityId;}public String getStatus(){return status;}public void complete(UUID entity){entityId=entity;status="SYNCED";syncedAt=Instant.now();}public void fail(){status="FAILED";syncedAt=Instant.now();}}
+package com.example.ayni.sync.model;
+
+import jakarta.persistence.*;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Entity
+@Table(name = "sync_operations")
+public class SyncOperation {
+    @Id
+    private UUID id;
+    @Column(name = "user_id")
+    private UUID userId;
+    @Column(name = "operation_id")
+    private UUID operationId;
+    @Column(name = "operation_type")
+    private String operationType;
+    @Column(name = "entity_id")
+    private UUID entityId;
+    private String status;
+    @Column(name = "created_at")
+    private Instant createdAt;
+    @Column(name = "synced_at")
+    private Instant syncedAt;
+
+    protected SyncOperation() {
+    }
+
+    public SyncOperation(UUID user, UUID operation, String type) {
+        id = UUID.randomUUID();
+        userId = user;
+        operationId = operation;
+        operationType = type;
+        status = "PROCESSING";
+        createdAt = Instant.now();
+    }
+
+    public UUID getOperationId() {
+        return operationId;
+    }
+
+    public UUID getEntityId() {
+        return entityId;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void complete(UUID entity) {
+        entityId = entity;
+        status = "SYNCED";
+        syncedAt = Instant.now();
+    }
+
+    public void fail() {
+        status = "FAILED";
+        syncedAt = Instant.now();
+    }
+}

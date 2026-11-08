@@ -1,1 +1,21 @@
-package com.example.ayni.help.dto;import com.example.ayni.help.model.HelpPost;import jakarta.validation.constraints.*;import java.util.UUID;public final class HelpRequests{private HelpRequests(){}public record Create(UUID communityId,@NotNull HelpPost.Type type,@NotBlank @Size(max=160)String title,@NotBlank @Size(max=2000)String description,boolean emergency){}public record Response(@NotBlank @Size(max=1000)String message){}public record Status(@NotNull HelpPost.Status status){}}
+package com.example.ayni.help.dto;
+
+import com.example.ayni.help.model.HelpPost;
+import jakarta.validation.constraints.*;
+
+import java.util.UUID;
+
+public final class HelpRequests {
+    private HelpRequests() {
+    }
+
+    public record Create(UUID communityId, @NotNull HelpPost.Type type, @NotBlank @Size(max = 160) String title,
+                         @NotBlank @Size(max = 2000) String description, boolean emergency) {
+    }
+
+    public record Response(@NotBlank @Size(max = 1000) String message) {
+    }
+
+    public record Status(@NotNull HelpPost.Status status) {
+    }
+}
