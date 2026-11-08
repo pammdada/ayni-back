@@ -1,5 +1,8 @@
 package com.example.ayni.profile.service;
 
+import com.example.ayni.follow.repository.ProfileFollowRepository;
+import com.example.ayni.post.model.Post;
+import com.example.ayni.post.repository.PostRepository;
 import com.example.ayni.profile.dto.*;
 import com.example.ayni.profile.model.*;
 import com.example.ayni.profile.repository.*;
@@ -14,10 +17,15 @@ import java.util.*;
 public class ProfileService {
     private final ProfileRepository profiles;
     private final ProfileTagRepository tags;
+    private final PostRepository posts;
+    private final ProfileFollowRepository follows;
 
-    public ProfileService(ProfileRepository profiles, ProfileTagRepository tags) {
+    public ProfileService(ProfileRepository profiles, ProfileTagRepository tags, PostRepository posts,
+                          ProfileFollowRepository follows) {
         this.profiles = profiles;
         this.tags = tags;
+        this.posts = posts;
+        this.follows = follows;
     }
 
     public ProfileResponse create(UUID userId, ProfileRequests.Create request) {
@@ -47,6 +55,17 @@ public class ProfileService {
     @Transactional(readOnly = true)
     public List<ProfileTag> availableTags() {
         return tags.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public ProfileStatsResponse stats(UUID id, UUID viewer) {
+        profile(id);
+        long postCount = posts.countByAuthorIdAndStatusNot(id, Post.Status.DELETED);
+        long followerCount = follows.countByFollowedId(id);
+        long followingCount = follows.countByFollowerId(id);
+        boolean followedByMe = viewer != null && !viewer.equals(id)
+                && follows.existsByFollowerIdAndFollowedId(viewer, id);
+        return new ProfileStatsResponse(postCount, followerCount, followingCount, followedByMe);
     }
 
     private Profile profile(UUID id) {

@@ -15,6 +15,7 @@ public record FeedItem(
         String imageUrl,
         Instant createdAt,
         long likeCount,
-        long commentCount
+        long commentCount,
+        boolean likedByMe
 ) {
 }

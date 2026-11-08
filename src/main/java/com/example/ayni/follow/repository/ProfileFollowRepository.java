@@ -16,6 +16,10 @@ public interface ProfileFollowRepository extends JpaRepository<ProfileFollow, Pr
 
     List<ProfileFollow> findByFollowedId(UUID followedId);
 
+    long countByFollowedId(UUID followedId);
+
+    long countByFollowerId(UUID followerId);
+
     @Query("select f.followedId from ProfileFollow f where f.followerId = :follower")
     List<UUID> findFollowedIds(@Param("follower") UUID follower);
 

@@ -16,12 +16,15 @@ import com.example.ayni.post.repository.PostCommentRepository;
 import com.example.ayni.post.repository.PostLikeRepository;
 import com.example.ayni.post.repository.PostMediaRepository;
 import com.example.ayni.post.repository.PostRepository;
+import com.example.ayni.profile.dto.ProfileSummary;
+import com.example.ayni.profile.model.Profile;
+import com.example.ayni.profile.repository.ProfileRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -33,10 +36,12 @@ public class PostService {
     private final CommunityRepository communities;
     private final CommunityMemberRepository members;
     private final ProfileFollowRepository follows;
+    private final ProfileRepository profiles;
 
     public PostService(PostRepository posts, PostMediaRepository media, PostLikeRepository likes,
                        PostCommentRepository comments, CommunityRepository communities,
-                       CommunityMemberRepository members, ProfileFollowRepository follows) {
+                       CommunityMemberRepository members, ProfileFollowRepository follows,
+                       ProfileRepository profiles) {
         this.posts = posts;
         this.media = media;
         this.likes = likes;
@@ -44,6 +49,7 @@ public class PostService {
         this.communities = communities;
         this.members = members;
         this.follows = follows;
+        this.profiles = profiles;
     }
 
     public PostResponse create(UUID user, PostRequests.Create request) {
@@ -127,10 +133,7 @@ public class PostService {
     @Transactional(readOnly = true)
     public List<CommentResponse> comments(UUID id, UUID viewer) {
         visible(id, viewer);
-        return comments.findByPostIdAndStatusOrderByCreatedAtAsc(id, PostComment.Status.ACTIVE)
-                .stream()
-                .map(CommentResponse::from)
-                .toList();
+        return commentResponses(comments.findByPostIdAndStatusOrderByCreatedAtAsc(id, PostComment.Status.ACTIVE));
     }
 
     public CommentResponse comment(UUID id, UUID user, PostRequests.Comment request) {
@@ -141,7 +144,8 @@ public class PostService {
                 throw new IllegalArgumentException("El comentario padre no pertenece a la publicación");
             }
         }
-        return CommentResponse.from(comments.save(new PostComment(id, user, request.parentId(), request.content())));
+        PostComment saved = comments.save(new PostComment(id, user, request.parentId(), request.content()));
+        return CommentResponse.from(saved, profileSummary(user));
     }
 
     public void deleteComment(UUID commentId, UUID user) {
@@ -168,6 +172,20 @@ public class PostService {
         long commentCount = comments.countByPostIdAndStatus(post.getId(), PostComment.Status.ACTIVE);
         boolean likedByMe = likes.existsByPostIdAndUserId(post.getId(), viewer);
         return PostResponse.from(post, postMedia, likeCount, commentCount, likedByMe);
+    }
+
+    private List<CommentResponse> commentResponses(List<PostComment> found) {
+        if (found.isEmpty()) return List.of();
+        Set<UUID> authorIds = found.stream().map(PostComment::getAuthorId).collect(Collectors.toSet());
+        Map<UUID, ProfileSummary> authors = profiles.findAllById(authorIds).stream()
+                .collect(Collectors.toMap(Profile::getId, ProfileSummary::from));
+        return found.stream()
+                .map(comment -> CommentResponse.from(comment, authors.get(comment.getAuthorId())))
+                .toList();
+    }
+
+    private ProfileSummary profileSummary(UUID id) {
+        return profiles.findById(id).map(ProfileSummary::from).orElse(null);
     }
 
     private Post visible(UUID id, UUID viewer) {

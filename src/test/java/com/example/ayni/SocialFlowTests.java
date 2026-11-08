@@ -1,19 +1,24 @@
 package com.example.ayni;
 
+import com.example.ayni.community.dto.CommunityMemberResponse;
 import com.example.ayni.community.dto.CommunityRequests;
 import com.example.ayni.community.dto.CommunityResponse;
 import com.example.ayni.community.model.Community;
+import com.example.ayni.community.model.CommunityMember;
 import com.example.ayni.community.service.CommunityService;
 import com.example.ayni.feed.dto.FeedItem;
 import com.example.ayni.feed.service.FeedService;
 import com.example.ayni.follow.service.FollowService;
+import com.example.ayni.post.dto.CommentResponse;
 import com.example.ayni.post.dto.PostRequests;
 import com.example.ayni.post.dto.PostResponse;
 import com.example.ayni.post.model.Post;
 import com.example.ayni.post.service.PostService;
+import com.example.ayni.profile.dto.ProfileStatsResponse;
 import com.example.ayni.profile.model.AccountType;
 import com.example.ayni.profile.model.Profile;
 import com.example.ayni.profile.repository.ProfileRepository;
+import com.example.ayni.profile.service.ProfileService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +45,8 @@ class SocialFlowTests {
     private FollowService follows;
     @Autowired
     private FeedService feed;
+    @Autowired
+    private ProfileService profileService;
 
     private UUID author;
     private UUID follower;
@@ -100,6 +107,58 @@ class SocialFlowTests {
         assertThat(updated.commentCount()).isEqualTo(1);
         assertThat(updated.likedByMe()).isFalse();
         assertThat(posts.get(post.id(), follower).likedByMe()).isTrue();
+
+        List<CommentResponse> comments = posts.comments(post.id(), author);
+        assertThat(comments).hasSize(1);
+        assertThat(comments.get(0).author()).isNotNull();
+        assertThat(comments.get(0).author().id()).isEqualTo(follower);
+    }
+
+    @Test
+    void feedMarksLikedPostsForCurrentUser() {
+        PostResponse post = posts.create(author, request(null, Post.Visibility.PUBLIC));
+        posts.like(post.id(), follower);
+
+        FeedItem item = feed.feed(follower, null, 20).stream()
+                .filter(feedItem -> feedItem.id().equals(post.id()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(item.likedByMe()).isTrue();
+    }
+
+    @Test
+    void communityMembershipCountsAndProfilesAreResolved() {
+        CommunityResponse community = communities.create(author, new CommunityRequests.Create(
+                "Grupo publico", "Abierto", null, null, null, Community.Visibility.PUBLIC, null));
+
+        assertThat(community.memberCount()).isEqualTo(1);
+
+        CommunityMemberResponse joined = communities.join(community.id(), follower);
+        assertThat(joined.profile()).isNotNull();
+        assertThat(joined.profile().id()).isEqualTo(follower);
+        assertThat(communities.get(community.id()).memberCount()).isEqualTo(2);
+
+        List<CommunityMemberResponse> active = communities.members(
+                community.id(), CommunityMember.Status.ACTIVE);
+        assertThat(active).hasSize(2);
+        assertThat(active).extracting(CommunityMemberResponse::profile).doesNotContainNull();
+
+        assertThat(communities.membership(community.id(), follower)).isPresent();
+        assertThat(communities.membership(community.id(), stranger)).isEmpty();
+    }
+
+    @Test
+    void profileStatsReflectPostsAndFollows() {
+        posts.create(author, request(null, Post.Visibility.PUBLIC));
+        follows.follow(follower, author);
+
+        ProfileStatsResponse stats = profileService.stats(author, follower);
+
+        assertThat(stats.postCount()).isEqualTo(1);
+        assertThat(stats.followerCount()).isEqualTo(1);
+        assertThat(stats.followingCount()).isZero();
+        assertThat(stats.followedByMe()).isTrue();
     }
 
     private PostRequests.Create request(UUID communityId, Post.Visibility visibility) {

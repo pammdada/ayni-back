@@ -17,6 +17,8 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
 
     List<Post> findByCommunityIdAndStatusNotOrderByCreatedAtDesc(UUID communityId, Post.Status status);
 
+    long countByAuthorIdAndStatusNot(UUID authorId, Post.Status status);
+
     @Query("""
             select p from Post p
             where p.status = :active

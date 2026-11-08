@@ -34,6 +34,12 @@ public class ProfileController {
         return service.get(id);
     }
 
+    @GetMapping("/{id}/stats")
+    public ProfileStatsResponse stats(@PathVariable UUID id, @AuthenticationPrincipal Jwt jwt) {
+        UUID viewer = jwt == null ? null : UUID.fromString(jwt.getSubject());
+        return service.stats(id, viewer);
+    }
+
     @PutMapping("/me")
     public ProfileResponse update(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody ProfileRequests.Update request) {
         return service.update(UUID.fromString(jwt.getSubject()), request);

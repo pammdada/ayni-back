@@ -73,6 +73,8 @@ public class FeedService {
         Map<UUID, Long> likeCounts = postIds.isEmpty() ? Map.of() : countMap(likes.countByPostIds(postIds));
         Map<UUID, Long> commentCounts = postIds.isEmpty() ? Map.of()
                 : countMap(comments.countByPostIds(postIds, PostComment.Status.ACTIVE));
+        Set<UUID> likedPostIds = postIds.isEmpty() ? Set.of()
+                : new HashSet<>(likes.findLikedPostIds(user, postIds));
         Map<UUID, String> images = new HashMap<>();
         if (!postIds.isEmpty()) {
             for (PostMedia item : media.findByPostIdInOrderByPositionAsc(postIds)) {
@@ -84,16 +86,17 @@ public class FeedService {
         for (Post post : postList) {
             items.add(new FeedItem(post.getId(), "POST", authors.get(post.getAuthorId()), post.getCommunityId(),
                     post.getTitle(), summary(post.getContent()), images.get(post.getId()), post.getCreatedAt(),
-                    likeCounts.getOrDefault(post.getId(), 0L), commentCounts.getOrDefault(post.getId(), 0L)));
+                    likeCounts.getOrDefault(post.getId(), 0L), commentCounts.getOrDefault(post.getId(), 0L),
+                    likedPostIds.contains(post.getId())));
         }
         for (Listing listing : listingList) {
             items.add(new FeedItem(listing.getId(), "LISTING", authors.get(listing.getOwnerId()),
                     listing.getCommunityId(), listing.getTitle(), summary(listing.getDescription()),
-                    listing.getImageUrl(), listing.getCreatedAt(), 0L, 0L));
+                    listing.getImageUrl(), listing.getCreatedAt(), 0L, 0L, false));
         }
         for (HelpPost help : helpList) {
             items.add(new FeedItem(help.getId(), "HELP_POST", authors.get(help.getUserId()), null,
-                    help.getTitle(), summary(help.getDescription()), null, help.getCreatedAt(), 0L, 0L));
+                    help.getTitle(), summary(help.getDescription()), null, help.getCreatedAt(), 0L, 0L, false));
         }
 
         items.sort(Comparator.comparing(FeedItem::createdAt, Comparator.nullsLast(Comparator.reverseOrder())));

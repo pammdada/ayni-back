@@ -51,6 +51,14 @@ public class CommunityController {
         return service.join(id, me(jwt));
     }
 
+    @GetMapping("/{id}/membership")
+    public ResponseEntity<CommunityMemberResponse> membership(@PathVariable UUID id,
+                                                              @AuthenticationPrincipal Jwt jwt) {
+        return service.membership(id, me(jwt))
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
     @GetMapping("/{id}/members")
     public List<CommunityMemberResponse> members(@PathVariable UUID id,
                                                  @RequestParam(required = false) CommunityMember.Status status) {
