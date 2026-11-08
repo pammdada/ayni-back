@@ -30,7 +30,7 @@ public class SecurityConfig {
 
     @Bean
     @ConditionalOnProperty(prefix = "app.security", name = "jwt-enabled", havingValue = "true")
-    JwtDecoder jwtDecoder(@Value("${SUPABASE_JWT_ISSUER_URI}") String issuer) {
+    JwtDecoder jwtDecoder(@Value("${app.security.jwt-issuer-uri}") String issuer) {
         return JwtDecoders.fromIssuerLocation(issuer);
     }
 
