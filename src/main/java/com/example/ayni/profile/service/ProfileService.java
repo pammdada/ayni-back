@@ -44,6 +44,11 @@ public class ProfileService {
         return ProfileResponse.from(p);
     }
 
+    @Transactional(readOnly = true)
+    public List<ProfileTag> availableTags() {
+        return tags.findAll();
+    }
+
     private Profile profile(UUID id) {
         return profiles.findById(id).orElseThrow(() -> new EntityNotFoundException("Perfil no encontrado"));
     }
